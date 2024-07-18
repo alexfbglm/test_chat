@@ -3,6 +3,9 @@ transformers
 torch
 unidecode
 langchain
-langchain-embed
 chromadb
 accelerate
+pypdf
+sentence-transformers
+tqdm
+langchain_community
