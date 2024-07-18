@@ -1,13 +1,15 @@
-import streamlit as st
 import os
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
-from langchain.document_loaders import PyPDFLoader
+import streamlit as st
+
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 from langchain.chains import ConversationalRetrievalChain
-from langchain.embeddings import HuggingFaceEmbeddings 
-from langchain.llms import HuggingFaceEndpoint
+from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain.memory import ConversationBufferMemory
+from langchain_community.llms import HuggingFaceEndpoint
 
 from pathlib import Path
 import chromadb
@@ -52,14 +54,14 @@ def create_collection_name(filepath):
     return collection_name
 
 # Initialize langchain LLM chain
-def initialize_llmchain(llm_model, temperature, max_tokens, top_k, vector_db):
+def initialize_llmchain(temperature, max_tokens, top_k, vector_db):
+    llm_model = "mistralai/Mistral-7B-Instruct-v0.2"
     llm = HuggingFaceEndpoint(
         repo_id=llm_model,
         temperature=temperature,
         max_new_tokens=max_tokens,
         top_k=top_k,
     )
-
     memory = ConversationBufferMemory(
         memory_key="chat_history",
         output_key='answer',
@@ -69,7 +71,7 @@ def initialize_llmchain(llm_model, temperature, max_tokens, top_k, vector_db):
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm,
         retriever=retriever,
-        chain_type="stuff",
+        chain_type="stuff", 
         memory=memory,
         return_source_documents=True,
         verbose=False,
@@ -87,49 +89,36 @@ def conversation(qa_chain, message, history):
     formatted_chat_history = format_chat_history(message, history)
     response = qa_chain({"question": message, "chat_history": formatted_chat_history})
     response_answer = response["answer"]
-    if "Helpful Answer:" in response_answer:
-        response_answer = response_answer.split("Helpful Answer:")[-1]
     response_sources = response["source_documents"]
     response_source1 = response_sources[0].page_content.strip()
-    response_source2 = response_sources[1].page_content.strip()
-    response_source3 = response_sources[2].page_content.strip()
     response_source1_page = response_sources[0].metadata["page"] + 1
-    response_source2_page = response_sources[1].metadata["page"] + 1
-    response_source3_page = response_sources[2].metadata["page"] + 1
     new_history = history + [(message, response_answer)]
-    return qa_chain, new_history, response_source1, response_source1_page, response_source2, response_source2_page, response_source3, response_source3_page
+    return qa_chain, "", new_history, response_source1, response_source1_page
 
-def initialize_database(uploaded_files):
+st.title("PDF-based Chatbot")
+st.markdown("Upload your PDF and ask any questions about its content.")
+
+uploaded_files = st.file_uploader("Upload PDF", type="pdf", accept_multiple_files=True)
+
+if uploaded_files:
+    st.write("Processing documents...")
     list_file_path = [file.name for file in uploaded_files]
     collection_name = create_collection_name(list_file_path[0])
     doc_splits = load_doc(list_file_path)
     vector_db = create_db(doc_splits, collection_name)
-    return vector_db, collection_name
+    st.write("Initializing LLM...")
+    qa_chain = initialize_llmchain(0.7, 1024, 3, vector_db)
+    st.write("Ready for questions!")
 
-def main():
-    st.title("PDF-based Chatbot")
-    st.write("Ask any questions about your PDF documents")
+    history = []
+    if "history" not in st.session_state:
+        st.session_state["history"] = []
 
-    uploaded_files = st.file_uploader("Upload your PDF documents (single or multiple)", accept_multiple_files=True, type=["pdf"])
+    user_input = st.text_input("Type your question here...")
 
-    if uploaded_files:
-        with st.spinner("Processing documents and initializing..."):
-            vector_db, collection_name = initialize_database(uploaded_files)
-            qa_chain = initialize_llmchain("mistralai/Mistral-7B-Instruct-v0.2", 0.7, 1024, 3, vector_db)
-            st.session_state.qa_chain = qa_chain
-            st.session_state.chat_history = []
-            st.success("Initialization complete. You can start asking questions now.")
-
-    if "qa_chain" in st.session_state:
-        message = st.text_input("Type message (e.g. 'What is this document about?')")
-        if st.button("Submit message"):
-            qa_chain, chat_history, source1, source1_page, source2, source2_page, source3, source3_page = conversation(st.session_state.qa_chain, message, st.session_state.chat_history)
-            st.session_state.chat_history = chat_history
-            st.write("Chatbot:", chat_history)
-            st.write(f"Reference 1 (Page {source1_page}): {source1}")
-            st.write(f"Reference 2 (Page {source2_page}): {source2}")
-            st.write(f"Reference 3 (Page {source3_page}): {source3}")
-
-if __name__ == "__main__":
-    main()
+    if user_input:
+        qa_chain, _, st.session_state["history"], response_source1, response_source1_page = conversation(
+            qa_chain, user_input, st.session_state["history"])
+        st.write(f"Assistant: {st.session_state['history'][-1][1]}")
+        st.write(f"Source: {response_source1} (Page {response_source1_page})")
 
