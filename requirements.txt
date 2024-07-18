@@ -8,3 +8,5 @@ pypdf
 chromadb
 unidecode
 langchain_community
+streamlit 
+langchain-embed     
