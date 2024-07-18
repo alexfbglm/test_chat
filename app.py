@@ -99,6 +99,13 @@ def conversation(qa_chain, message, history):
     new_history = history + [(message, response_answer)]
     return qa_chain, new_history, response_source1, response_source1_page, response_source2, response_source2_page, response_source3, response_source3_page
 
+def initialize_database(uploaded_files):
+    list_file_path = [file.name for file in uploaded_files]
+    collection_name = create_collection_name(list_file_path[0])
+    doc_splits = load_doc(list_file_path)
+    vector_db = create_db(doc_splits, collection_name)
+    return vector_db, collection_name
+
 def main():
     st.title("PDF-based Chatbot")
     st.write("Ask any questions about your PDF documents")
@@ -122,13 +129,6 @@ def main():
             st.write(f"Reference 1 (Page {source1_page}): {source1}")
             st.write(f"Reference 2 (Page {source2_page}): {source2}")
             st.write(f"Reference 3 (Page {source3_page}): {source3}")
-
-def initialize_database(uploaded_files):
-    list_file_path = [x.name for x in uploaded_files if x is not None]
-    collection_name = create_collection_name(list_file_path[0])
-    doc_splits = load_doc(list_file_path)
-    vector_db = create_db(doc_splits, collection_name)
-    return vector_db, collection_name
 
 if __name__ == "__main__":
     main()
