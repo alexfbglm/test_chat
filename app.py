@@ -121,4 +121,3 @@ if uploaded_files:
             qa_chain, user_input, st.session_state["history"])
         st.write(f"Assistant: {st.session_state['history'][-1][1]}")
         st.write(f"Source: {response_source1} (Page {response_source1_page})")
-
