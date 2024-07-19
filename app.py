@@ -21,7 +21,7 @@ def load_doc(list_file_path, chunk_size=600, chunk_overlap=40):
     loaders = [PyPDFLoader(x) for x in list_file_path]
     pages = []
     for loader in loaders:
-        pages.extend(loader.load())
+        pages extend(loader.load())
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     doc_splits = text_splitter.split_documents(pages)
     return doc_splits
@@ -101,14 +101,16 @@ st.markdown("Upload your PDF and ask any questions about its content.")
 uploaded_files = st.file_uploader("Upload PDF", type="pdf", accept_multiple_files=True)
 
 if uploaded_files:
-    st.write("Processing documents...")
-    list_file_path = [file.name for file in uploaded_files]
-    collection_name = create_collection_name(list_file_path[0])
-    doc_splits = load_doc(list_file_path)
-    vector_db = create_db(doc_splits, collection_name)
-    st.write("Initializing LLM...")
-    qa_chain = initialize_llmchain(0.7, 1024, 3, vector_db)
-    st.write("Ready for questions!")
+    with st.spinner('Processing documents...'):
+        try:
+            list_file_path = [file for file in uploaded_files]
+            collection_name = create_collection_name(list_file_path[0].name)
+            doc_splits = load_doc(list_file_path)
+            vector_db = create_db(doc_splits, collection_name)
+            qa_chain = initialize_llmchain(0.7, 1024, 3, vector_db)
+            st.success("Ready for questions!")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
 
     history = []
     if "history" not in st.session_state:
