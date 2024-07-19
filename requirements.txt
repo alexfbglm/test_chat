@@ -1,8 +1,6 @@
-openai 
+streamlit 
+langchain 
+langchain-community 
 chromadb 
-sentence-transformers 
-chardet 
-PyPDF2 
-streamlit
-
-
+unidecode 
+transformers
