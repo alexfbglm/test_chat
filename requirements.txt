@@ -1,6 +1,9 @@
-streamlit 
-langchain 
-langchain-community 
-chromadb 
-unidecode 
+streamlit
+langchain-community
+chromadb
+unidecode
 transformers
+protobuf==3.20.1  # or a compatible version with your other dependencies
+opentelemetry-api==1.9.1  # specify a version compatible with your setup
+opentelemetry-sdk==1.9.1
+opentelemetry-exporter-otlp==1.9.1
