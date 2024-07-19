@@ -21,7 +21,7 @@ def load_doc(list_file_path, chunk_size=600, chunk_overlap=40):
     loaders = [PyPDFLoader(x) for x in list_file_path]
     pages = []
     for loader in loaders:
-        pages extend(loader.load())
+        pages.extend(loader.load())
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     doc_splits = text_splitter.split_documents(pages)
     return doc_splits
